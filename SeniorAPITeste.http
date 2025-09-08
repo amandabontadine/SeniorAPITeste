@@ -1,0 +1,48 @@
+@host = https://localhost:5001
+
+### 1) Autenticar
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "username": "admin", "password": "admin" }
+
+### 2) Listar pessoas
+GET {{host}}/api/pessoas
+Authorization: Bearer {{login.response.body.$.token}}
+
+### 3) Obter por código
+GET {{host}}/api/pessoas/1
+Authorization: Bearer {{login.response.body.$.token}}
+
+### 4) Filtrar por UF
+GET {{host}}/api/pessoas/uf/SP
+Authorization: Bearer {{login.response.body.$.token}}
+
+### 5) Criar
+POST {{host}}/api/pessoas
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "nome": "Ana",
+  "cpf": "12345678909",
+  "uf": "MG",
+  "dataNascimento": "1995-10-05"
+}
+
+### 6) Atualizar
+PUT {{host}}/api/pessoas/1
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva",
+  "cpf": "11144477735",
+  "uf": "SP",
+  "dataNascimento": "1990-01-01"
+}
+
+### 7) Excluir
+DELETE {{host}}/api/pessoas/2
+Authorization: Bearer {{login.response.body.$.token}}

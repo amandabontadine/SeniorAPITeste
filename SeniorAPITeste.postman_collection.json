@@ -1,0 +1,146 @@
+{
+  "info": {
+    "name": "SeniorAPITeste - Pessoas API",
+    "_postman_id": "d8f2c0a2-5d0b-4e9f-a1a8-000000000001",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Coleção para testar a API de Auth e Pessoas (JWT + rotas protegidas)."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5183" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (gera token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json && json.token) {",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    console.log('Token salvo em {{token}}');",
+                  "  }",
+                  "} catch(e) { console.error('Falha ao parsear JSON'); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"senior123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pessoas (todas protegidas)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          { "key": "token", "value": "{{token}}", "type": "string" }
+        ]
+      },
+      "item": [
+        {
+          "name": "Listar pessoas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pessoas"]
+            }
+          }
+        },
+        {
+          "name": "Obter por código",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pessoas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Filtrar por UF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas/uf/SP",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pessoas", "uf", "SP"]
+            }
+          }
+        },
+        {
+          "name": "Criar",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pessoas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Ana\",\n  \"cpf\": \"12345678909\",\n  \"uf\": \"SP\",\n  \"dataNascimento\": \"1995-10-05\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Atualizar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pessoas", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João da Silva\",\n  \"cpf\": \"11144477735\",\n  \"uf\": \"SP\",\n  \"dataNascimento\": \"1990-01-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Excluir",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/pessoas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pessoas", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
