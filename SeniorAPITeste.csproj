@@ -13,4 +13,10 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="run-api-http.bat">
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
