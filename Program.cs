@@ -4,12 +4,19 @@ using Microsoft.OpenApi.Models;
 using SeniorAPITeste.Auth;
 using SeniorAPITeste.Repositories;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Services
 builder.Services.AddControllers();
 builder.Services.AddSingleton<IPessoaRepository, InMemoryPessoaRepository>();
+
+// Desliga o 400 automático do [ApiController] para você tratar o ModelState manualmente
+builder.Services.Configure<ApiBehaviorOptions>(o =>
+{
+    o.SuppressModelStateInvalidFilter = true;
+});
 
 // JWT
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));

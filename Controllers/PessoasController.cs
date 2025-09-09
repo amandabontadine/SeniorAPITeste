@@ -12,72 +12,108 @@ namespace SeniorAPITeste.Controllers
     [Authorize]
     public class PessoasController : ControllerBase
     {
-        private static List<Pessoa> _pessoas = new List<Pessoa>();
+        private static readonly List<Pessoa> _pessoas = new();
         private static int _nextId = 1;
+
+        // Coleta erros de validação do ModelState para resposta
+        private Dictionary<string, string[]> ErrorsFromModelState() =>
+            ModelState
+                .Where(kvp => kvp.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value!.Errors
+                                .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage)
+                                    ? "Erro de validação"
+                                    : e.ErrorMessage)
+                                .ToArray()
+                );
 
         [HttpGet]
         public IActionResult GetAll()
         {
-            return Ok(_pessoas);
+            var msg = _pessoas.Count == 0
+                ? "Nenhuma pessoa cadastrada"
+                : $"Total de pessoas: {_pessoas.Count}";
+            return Ok(new ApiResponse<IEnumerable<Pessoa>>(msg, _pessoas));
         }
 
-        [HttpGet("{codigo}")]
+        [HttpGet("{codigo:int}")]
         public IActionResult GetById(int codigo)
         {
             var pessoa = _pessoas.FirstOrDefault(p => p.Codigo == codigo);
             if (pessoa == null)
-                return NotFound(new { message = "Pessoa não encontrada" });
+                return NotFound(new ApiError("Pessoa não encontrada"));
 
-            return Ok(pessoa);
+            return Ok(new ApiResponse<Pessoa>("Pessoa encontrada", pessoa));
         }
 
         [HttpGet("uf/{uf}")]
         public IActionResult GetByUF(string uf)
         {
-            var pessoas = _pessoas.Where(p => p.UF.Equals(uf, StringComparison.OrdinalIgnoreCase)).ToList();
-            return Ok(pessoas);
+            var lista = _pessoas
+                .Where(p => p.UF.Equals(uf, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var msg = lista.Count == 0
+                ? "Nenhuma pessoa para a UF informada"
+                : $"Total na UF {uf.ToUpperInvariant()}: {lista.Count}";
+
+            return Ok(new ApiResponse<IEnumerable<Pessoa>>(msg, lista));
         }
 
         [HttpPost]
         public IActionResult Create([FromBody] Pessoa pessoa)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new ApiValidationError("Dados inválidos", ErrorsFromModelState()));
 
             pessoa.Codigo = _nextId++;
             _pessoas.Add(pessoa);
-            return CreatedAtAction(nameof(GetById), new { codigo = pessoa.Codigo }, pessoa);
+
+            // 201 Created com Location apontando para GET /api/pessoas/{codigo}
+            return CreatedAtAction(
+                nameof(GetById),
+                new { codigo = pessoa.Codigo },
+                new ApiResponse<Pessoa>("Pessoa criada com sucesso", pessoa)
+            );
         }
 
-        [HttpPut("{codigo}")]
+        [HttpPut("{codigo:int}")]
         public IActionResult Update(int codigo, [FromBody] Pessoa pessoa)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new ApiValidationError("Dados inválidos", ErrorsFromModelState()));
 
-            var existingPessoa = _pessoas.FirstOrDefault(p => p.Codigo == codigo);
-            if (existingPessoa == null)
-                return NotFound(new { message = "Pessoa não encontrada" });
+            var existing = _pessoas.FirstOrDefault(p => p.Codigo == codigo);
+            if (existing == null)
+                return NotFound(new ApiError("Pessoa não encontrada"));
 
-            existingPessoa.Nome = pessoa.Nome;
-            existingPessoa.CPF = pessoa.CPF;
-            existingPessoa.UF = pessoa.UF;
-            existingPessoa.DataNascimento = pessoa.DataNascimento;
+            existing.Nome = pessoa.Nome;
+            existing.CPF = pessoa.CPF;
+            existing.UF = pessoa.UF;
+            existing.DataNascimento = pessoa.DataNascimento;
 
-            return Ok(existingPessoa);
+            return Ok(new ApiResponse<Pessoa>("Pessoa atualizada com sucesso", existing));
         }
 
-        [HttpDelete("{codigo}")]
+        [HttpDelete("{codigo:int}")]
         public IActionResult Delete(int codigo)
         {
             var pessoa = _pessoas.FirstOrDefault(p => p.Codigo == codigo);
             if (pessoa == null)
-                return NotFound(new { message = "Pessoa não encontrada" });
+                return NotFound(new ApiError("Pessoa não encontrada"));
 
             _pessoas.Remove(pessoa);
-            return NoContent();
+
+            // 200 OK para poder enviar mensagem (ao invés de 204 NoContent)
+            return Ok(new ApiResponse<object>("Pessoa excluída com sucesso", new { codigo }));
         }
     }
+
+    // Envelopes de resposta
+    public record ApiResponse<T>(string Message, T Data);
+    public record ApiError(string Message);
+    public record ApiValidationError(string Message, Dictionary<string, string[]> Errors);
 
     public class Pessoa
     {
